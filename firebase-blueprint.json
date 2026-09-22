@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student record managed by a teacher",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Student full name",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Unique student identifier or roll number",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the teacher who created this record",
+          "maxLength": 128
+        },
+        "classroom": {
+          "type": "string",
+          "description": "Class or section grade level",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp or server timestamp of creation"
+        }
+      },
+      "required": [
+        "name",
+        "studentId",
+        "teacherId",
+        "createdAt"
+      ]
+    },
+    "Grade": {
+      "title": "Grade",
+      "description": "Grade entry for a specific student and subject",
+      "type": "object",
+      "properties": {
+        "studentId": {
+          "type": "string",
+          "description": "ID of the student record",
+          "maxLength": 128
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the teacher",
+          "maxLength": 128
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject title (e.g. الرياضيات، العلوم)",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "grade": {
+          "type": "number",
+          "description": "Numeric grade obtained"
+        },
+        "maxGrade": {
+          "type": "number",
+          "description": "Maximum possible grade score, default 100"
+        },
+        "term": {
+          "type": "string",
+          "description": "Exam type or semester term",
+          "maxLength": 50
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or remarks by the teacher",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": [
+        "studentId",
+        "teacherId",
+        "subject",
+        "grade",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/students/{studentDocId}": {
+      "schema": "Student",
+      "description": "Collection of students registered by teachers"
+    },
+    "/grades/{gradeDocId}": {
+      "schema": "Grade",
+      "description": "Collection of student grades assigned by teachers"
+    }
+  }
+}

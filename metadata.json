@@ -1,0 +1,6 @@
+{
+  "name": "مسار - إدارة الطلاب والدرجات",
+  "description": "تطبيق مسار للمعلمين لإدارة بيانات الطلاب والدرجات وحساب المعدلات والتقارير الإحصائية",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

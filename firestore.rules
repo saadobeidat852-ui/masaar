@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(teacherId) {
+      return isSignedIn() && request.auth.uid == teacherId;
+    }
+
+    // Student entity validation
+    function isValidStudent(data) {
+      return data.keys().hasAll(['name', 'studentId', 'teacherId', 'createdAt']) &&
+             data.keys().hasOnly(['name', 'studentId', 'teacherId', 'classroom', 'createdAt']) &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+             data.studentId is string && data.studentId.size() >= 1 && data.studentId.size() <= 50 &&
+             data.teacherId is string && data.teacherId == request.auth.uid &&
+             (!('classroom' in data) || (data.classroom is string && data.classroom.size() <= 50)) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Grade entity validation
+    function isValidGrade(data) {
+      return data.keys().hasAll(['studentId', 'teacherId', 'subject', 'grade', 'createdAt']) &&
+             data.keys().hasOnly(['studentId', 'teacherId', 'subject', 'grade', 'maxGrade', 'term', 'notes', 'createdAt']) &&
+             data.studentId is string && data.studentId.size() >= 1 && data.studentId.size() <= 128 &&
+             data.teacherId is string && data.teacherId == request.auth.uid &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 80 &&
+             data.grade is number && data.grade >= 0 && data.grade <= 1000 &&
+             (!('maxGrade' in data) || (data.maxGrade is number && data.maxGrade > 0 && data.maxGrade <= 1000)) &&
+             (!('term' in data) || (data.term is string && data.term.size() <= 50)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Students Collection
+    match /students/{studentDocId} {
+      allow get: if isSignedIn() && existing().teacherId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.teacherId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                    isValidId(studentDocId) &&
+                    isValidStudent(incoming()) &&
+                    incoming().teacherId == request.auth.uid;
+                    
+      allow update: if isSignedIn() && 
+                    isValidId(studentDocId) &&
+                    isValidStudent(incoming()) &&
+                    existing().teacherId == request.auth.uid &&
+                    incoming().teacherId == existing().teacherId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'studentId', 'classroom']);
+                    
+      allow delete: if isSignedIn() && 
+                    isValidId(studentDocId) &&
+                    existing().teacherId == request.auth.uid;
+    }
+
+    // Grades Collection
+    match /grades/{gradeDocId} {
+      allow get: if isSignedIn() && existing().teacherId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.teacherId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                    isValidId(gradeDocId) &&
+                    isValidGrade(incoming()) &&
+                    incoming().teacherId == request.auth.uid;
+                    
+      allow update: if isSignedIn() && 
+                    isValidId(gradeDocId) &&
+                    isValidGrade(incoming()) &&
+                    existing().teacherId == request.auth.uid &&
+                    incoming().teacherId == existing().teacherId &&
+                    incoming().studentId == existing().studentId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['subject', 'grade', 'maxGrade', 'term', 'notes']);
+                    
+      allow delete: if isSignedIn() && 
+                    isValidId(gradeDocId) &&
+                    existing().teacherId == request.auth.uid;
+    }
+  }
+}
